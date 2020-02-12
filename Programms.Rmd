@@ -1,0 +1,135 @@
+---
+title: "Programms"
+author: "Alejandro Dueñas García"
+date: "11/2/2020"
+output: html_document
+---
+# Logistic Map
+```{r}
+logistic.map <- function(r, x, N, M){
+  ## r: bifurcation parameter
+  ## x: initial value
+  ## N: number of iteration
+  ## M: number of iteration points to be returned
+  z <- 1:N
+  z[1] <- x
+  for(i in c(1:(N-1))){
+    z[i+1] <- r *z[i]  * (1 - z[i])
+  }
+  ## Return the last M iterations 
+  z[c((N-M):N)]
+}
+
+## Set scanning range for bifurcation parameter r
+my.r <- seq(2.5, 4, by=0.003)
+system.time(Orbit <- sapply(my.r, logistic.map,  x=0.1, N=1000, M=300))
+##   user  system elapsed (on a 2.4GHz Core2Duo)
+##   2.910   0.018   2.919 
+
+Orbit <- as.vector(Orbit)
+r <- sort(rep(my.r, 301))
+
+plot(Orbit ~ r, pch=".")
+```
+
+```{r}
+library(compiler) ## requires R >= 2.13.0
+logistic.map <- cmpfun(logistic.map) # same function as above
+my.r <- seq(2.5, 4, by=0.001)
+N <- 2000; M <- 500; start.x <- 0.1
+orbit <- sapply(my.r, logistic.map,  x=start.x, N=N, M=M)
+Orbit <- as.vector(orbit)
+r <- sort(rep(my.r, (M+1)))
+plot(Orbit ~ r, pch=".", col=rgb(0,0,0,0.05))
+```
+# Recursividad
+```{r}
+## Solución propuesta en los apuntes
+## Definiendo una función recursiva:
+
+f < - function(n) {
+if (n<=2) {
+a <- 1
+} else {
+a <- f(n-1) + f(n-2)
+}
+return(a)
+}
+
+## Resultados para los primeros 20 números
+for (i in 1:20) {
+print(f(i))
+}
+
+## Mostrar el tiempo empleado en realizar f(20)
+system.time( f(20) )
+## En mi máquina el tiempo necesario es de apenas 0.22s
+
+## Mostrar el tiempo empleado en realizar f(20)
+system.time( f(30) )
+## En mi máquina el tiempo necesario es de 27.30s
+
+## Si el programa se imprementa de forma puramente recursiva, la ejecución
+## será inviable conforme el número de la sucesión a calcular vaya aumentando.
+## Una llamada debe esperar a que sus llamadas "hijas" terminen para sumar,
+## pero las llamadas hijas tienen a su vez otras dos llamadas hijas cada una.
+## El proceso genera un árbol enorme de llamadas que eventualmente satura
+## la pila de la memoria, degradando el rendimiento de la máquina o incluso
+## bloqueandola
+
+## Solución propuesta
+## Empleamos una función recursiva terminal que se llama a si misma, pero
+## que no necesita esperar a que otra instancia termine de hacer cálculos.
+## La función Fib recibe el número a calcular
+## Si es mayor que 2, se pasa a una función f, que afortunadamente no
+## sobreescribe a la f de los apuntes (ocultacion).
+## La funcion f no necesita esperar a otras llamadas, pues tiene 3 parametros
+## i == es el numero de quien calculamos fib
+## j == es el fib de i-1
+## k == es el fib de i-2
+## Los resultados se van pasando de una iteración a la siguiente, no acarreando
+## llamadas que los vuelvan a calcular. Tampoco hace llamadas duplicadas.
+## En lugar de calcular el Fib de n y hacer llamadas para el Fib de los numeros
+## anteriores a n, empezamos desde el 3 y vamos aumentando i
+## Esto simula como calcularía una persona el Fibonacci con lápiz y papel
+
+Fib <- function (n){
+if (n<=2) {
+resultado <- 1
+} else {
+i <- 2; j <- 1; k <- 0;
+f <- function (i,j,k){
+if (i == n){
+return (j+k)
+} else {
+return (f(i+1,j+k,j))
+}
+}
+resultado <- f(i,j,k)
+}
+return (resultado)
+}
+
+## El tiempo empleado en calcular Fib(20) y Fib(30)
+system.time(Fib(20))
+system.time(Fib(30))
+## En ambos casos, el tiempo necesario fue 0.00s
+
+## Complejidad de cálculo:
+## Dado un numero n de la sucesión de Fibonacci, el cociente (n+1)/n es
+## 1.61803398874… (número aureo)
+## Con mi pc como referencia, el n=30 toma 27.3s para ser calculado por
+## la vía tradicional. El tiempo necesario para calcular otro número:
+## (complejidad ^ diferencia entre numeros) * (tiempo de referencia)
+
+## De modo que calcular f(40) tardaría...
+## (1.61803398874 ^ 10) * 27.3
+## = 3357.678 segundos
+## es decir 56 minutos
+
+## Pero es peor querer calcular el f(100), porque la complejidad se eleva a 70 y...
+## (1.61803398874 ^ 70) * 27.3
+## = 1.162244e+16 segundos
+## que son unos muy poco prácticos 368293027 años y pico
+```
+
